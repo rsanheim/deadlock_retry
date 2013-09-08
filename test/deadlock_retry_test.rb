@@ -66,35 +66,35 @@ class DeadlockRetryTest < Test::Unit::TestCase
 
   def test_no_errors_with_deadlock
     errors = [ DEADLOCK_ERROR ] * 3
-    assert_equal :success, MockModel.transaction { raise ActiveRecord::StatementInvalid, errors.shift unless errors.empty?; :success }
+    assert_equal :success, MockModel.transaction_with_deadlock_handling { raise ActiveRecord::StatementInvalid, errors.shift unless errors.empty?; :success }
     assert errors.empty?
   end
 
   def test_no_errors_with_lock_timeout
     errors = [ TIMEOUT_ERROR ] * 3
-    assert_equal :success, MockModel.transaction { raise ActiveRecord::StatementInvalid, errors.shift unless errors.empty?; :success }
+    assert_equal :success, MockModel.transaction_with_deadlock_handling { raise ActiveRecord::StatementInvalid, errors.shift unless errors.empty?; :success }
     assert errors.empty?
   end
 
   def test_error_if_limit_exceeded
     assert_raise(ActiveRecord::StatementInvalid) do
-      MockModel.transaction { raise ActiveRecord::StatementInvalid, DEADLOCK_ERROR }
+      MockModel.transaction_with_deadlock_handling { raise ActiveRecord::StatementInvalid, DEADLOCK_ERROR }
     end
   end
 
   def test_error_if_unrecognized_error
     assert_raise(ActiveRecord::StatementInvalid) do
-      MockModel.transaction { raise ActiveRecord::StatementInvalid, "Something else" }
+      MockModel.transaction_with_deadlock_handling { raise ActiveRecord::StatementInvalid, "Something else" }
     end
   end
 
-  def test_included_by_default
+  def test_not_included_by_default
     assert ActiveRecord::Base.respond_to?(:transaction_with_deadlock_handling)
   end
 
   def test_innodb_status_availability
     DeadlockRetry.innodb_status_cmd = nil
-    MockModel.transaction {}
+    MockModel.transaction_with_deadlock_handling {}
     assert_equal "show innodb status", DeadlockRetry.innodb_status_cmd
   end
 
