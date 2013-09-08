@@ -105,8 +105,8 @@ class DeadlockRetryTest < Test::Unit::TestCase
 
     MockModel.transaction do
       tries += 1
-      MockModel.transaction do
-        MockModel.transaction do
+      MockModel.transaction_with_deadlock_handling do
+        MockModel.transaction_with_deadlock_handling do
           errors += 1
           raise ActiveRecord::StatementInvalid, "MySQL::Error: Lock wait timeout exceeded" unless errors > 3
         end
